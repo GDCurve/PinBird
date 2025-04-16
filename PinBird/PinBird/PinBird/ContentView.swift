@@ -41,13 +41,17 @@ struct ContentView: View {
     @State private var greenHitPercentage = 0.0
     @State private var averageScore = 0.0
     
-    // Changing from counts to percentages
     @State private var fairwayMissDirections: [String: Double] = [:]
     @State private var greenMissDirections: [String: Double] = [:]
     
     @State private var searchQuery = ""
     @State private var filteredUsers: [String] = []
     @State private var followingUsers: [String] = []
+    
+    @State private var leaderboardData: [LeaderboardEntry] = []
+    @State private var userRank: Int = 0
+    @State private var userElo: Double = 0.0
+    @State private var userLastName: String = ""
 
     @Binding var selectedTab: String
 
@@ -56,7 +60,6 @@ struct ContentView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading) {
-                // Search Bar
                 TextField("Search by First or Last Name", text: $searchQuery)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding([.top, .horizontal])
@@ -64,7 +67,6 @@ struct ContentView: View {
                         filterUsers()
                     })
                 
-                // Search results
                 if !filteredUsers.isEmpty {
                     VStack {
                         Text("Search Results")
@@ -102,13 +104,57 @@ struct ContentView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .padding([.top, .horizontal])
+                
+                VStack(alignment: .leading) {
+                    Text("Leaderboard")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal)
+                    
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text("Rank")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .frame(width: 50, alignment: .leading)
+                            
+                            Text("Player")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            Text("ELO")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .frame(width: 60, alignment: .trailing)
+                        }
+                        .padding(.horizontal)
+                        
+                        ForEach(leaderboardData.prefix(7), id: \.id) { entry in
+                            leaderboardRow(rank: entry.rank, name: entry.name, lastName: entry.lastName, elo: entry.elo)
+                        }
+                        
+                        if userRank > 7 {
+                            Divider()
+                                .padding(.horizontal)
+                            
+                            leaderboardRow(rank: userRank, name: firstName, lastName: userLastName, elo: userElo)
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                }
+                .padding(.top, 8)
 
                 Text("Your Stats")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .padding(.horizontal)
+                    .padding(.top, 8)
 
-                // Statistic Squares Grid
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     statBox(title: "Total Rounds", value: "\(totalRounds)")
                     statBox(title: "Avg Putts", value: String(format: "%.1f", avgPutts))
@@ -117,7 +163,6 @@ struct ContentView: View {
                 }
                 .padding(.horizontal)
 
-                // Avg Score box - 2x wide and centered
                 HStack {
                     Spacer()
                     statBox(title: "Avg Score", value: String(format: "%.1f", averageScore))
@@ -126,7 +171,6 @@ struct ContentView: View {
                 }
                 .padding(.top, 8)
 
-                // Fairway Miss Directions Chart
                 VStack(alignment: .leading) {
                     Text("Fairway Miss Directions")
                         .font(.title3)
@@ -141,7 +185,6 @@ struct ContentView: View {
                         .padding(.horizontal)
                 }
 
-                // Green Miss Directions Chart
                 VStack(alignment: .leading) {
                     Text("Green Miss Directions")
                         .font(.title3)
@@ -162,7 +205,34 @@ struct ContentView: View {
         .onAppear(perform: {
             fetchUserStats()
             fetchFollowingUsers()
+            fetchLeaderboardData()
         })
+    }
+
+    private func leaderboardRow(rank: Int, name: String, lastName: String, elo: Double) -> some View {
+        HStack {
+            Text("\(rank).")
+                .font(rank <= 3 ? .headline : .body)
+                .fontWeight(rank <= 3 ? .bold : .regular)
+                .foregroundColor(
+                    rank == 1 ? .yellow :
+                    rank == 2 ? Color.gray :
+                    rank == 3 ? Color(red: 0.8, green: 0.5, blue: 0.2) : .primary
+                )
+                .frame(width: 50, alignment: .leading)
+            
+            Text("\(name) \(lastName.isEmpty ? "" : String(lastName.first!)).")
+                .font(rank <= 3 ? .headline : .body)
+                .fontWeight(rank <= 3 ? .bold : .regular)
+            
+            Spacer()
+            
+            Text("\(Int(elo))")
+                .font(rank <= 3 ? .headline : .body)
+                .fontWeight(rank <= 3 ? .bold : .regular)
+                .frame(width: 60, alignment: .trailing)
+        }
+        .padding(.horizontal)
     }
 
     private func statBox(title: String, value: String) -> some View {
@@ -235,14 +305,15 @@ struct ContentView: View {
             if let document = document, document.exists {
                 let data = document.data()
                 firstName = data?["name"] as? String ?? ""
+                userLastName = data?["surname"] as? String ?? ""
+                userElo = data?["elo"] as? Double ?? 0.0
 
                 totalRounds = data?["roundsPlayed"] as? Int ?? 0
                 avgPutts = data?["averagePutts"] as? Double ?? 0.0
                 fairwayHitPercentage = data?["fairwayHitPercentage"] as? Double ?? 0.0
-                greenHitPercentage = data?["greensInRegulation"] as? Double ?? 0.0  // Updated to match database
+                greenHitPercentage = data?["greensInRegulation"] as? Double ?? 0.0
                 averageScore = data?["averageScore"] as? Double ?? 0.0
                 
-                // Update miss direction stats to use percentages from database
                 fairwayMissDirections = [
                     "fairwayMissLeftPercentage": data?["fairwayMissLeftPercentage"] as? Double ?? 0.0,
                     "fairwayMissRightPercentage": data?["fairwayMissRightPercentage"] as? Double ?? 0.0
@@ -288,6 +359,60 @@ struct ContentView: View {
             }
         }
     }
+    
+    private func fetchLeaderboardData() {
+        guard let userID = Auth.auth().currentUser?.uid else { return }
+        
+        db.collection("users").document(userID).getDocument { document, error in
+            if let document = document, document.exists {
+                let data = document.data()
+                let followingIDs = data?["following"] as? [String] ?? []
+                var allIDs = followingIDs
+                allIDs.append(userID)
+                
+                var entries: [LeaderboardEntry] = []
+                let group = DispatchGroup()
+                
+                for id in allIDs {
+                    group.enter()
+                    db.collection("users").document(id).getDocument { doc, err in
+                        if let doc = doc, doc.exists {
+                            let userData = doc.data()
+                            let entry = LeaderboardEntry(
+                                id: id,
+                                rank: 0,
+                                name: userData?["name"] as? String ?? "",
+                                lastName: userData?["surname"] as? String ?? "",
+                                elo: userData?["elo"] as? Double ?? 0.0
+                            )
+                            entries.append(entry)
+                            
+                            if id == userID {
+                                self.userElo = entry.elo
+                            }
+                        }
+                        group.leave()
+                    }
+                }
+                
+                group.notify(queue: .main) {
+                    let sortedEntries = entries.sorted { $0.elo > $1.elo }
+                    
+                    var rankedEntries: [LeaderboardEntry] = []
+                    for (index, var entry) in sortedEntries.enumerated() {
+                        entry.rank = index + 1
+                        rankedEntries.append(entry)
+                        
+                        if entry.id == userID {
+                            self.userRank = entry.rank
+                        }
+                    }
+                    
+                    self.leaderboardData = rankedEntries
+                }
+            }
+        }
+    }
 
     private func filterUsers() {
         guard !searchQuery.isEmpty else {
@@ -320,7 +445,6 @@ struct ContentView: View {
     private func followUser(for user: String) {
         guard let currentUserID = Auth.auth().currentUser?.uid else { return }
         
-        // First find the target user
         let fullName = user.split(separator: " ")
         let firstName = String(fullName.first ?? "")
         
@@ -333,14 +457,12 @@ struct ContentView: View {
             guard let targetUser = snapshot?.documents.first else { return }
             let targetUserID = targetUser.documentID
             
-            // Add currentUserID to target user's followers array
             db.collection("users").document(targetUserID).updateData([
                 "followers": FieldValue.arrayUnion([currentUserID])
             ]) { error in
                 if let error = error {
                     print("Error following user: \(error.localizedDescription)")
                 } else {
-                    // Add targetUserID to current user's following array
                     db.collection("users").document(currentUserID).updateData([
                         "following": FieldValue.arrayUnion([targetUserID])
                     ]) { error in
@@ -348,8 +470,8 @@ struct ContentView: View {
                             print("Error updating following: \(error.localizedDescription)")
                         } else {
                             print("Successfully followed \(user)")
-                            // Update local state to reflect the change
                             followingUsers.append(user)
+                            fetchLeaderboardData()
                         }
                     }
                 }
@@ -360,7 +482,6 @@ struct ContentView: View {
     private func unfollowUser(for user: String) {
         guard let currentUserID = Auth.auth().currentUser?.uid else { return }
         
-        // First find the target user
         let fullName = user.split(separator: " ")
         let firstName = String(fullName.first ?? "")
         
@@ -373,14 +494,12 @@ struct ContentView: View {
             guard let targetUser = snapshot?.documents.first else { return }
             let targetUserID = targetUser.documentID
             
-            // Remove currentUserID from target user's followers array
             db.collection("users").document(targetUserID).updateData([
                 "followers": FieldValue.arrayRemove([currentUserID])
             ]) { error in
                 if let error = error {
                     print("Error unfollowing user: \(error.localizedDescription)")
                 } else {
-                    // Remove targetUserID from current user's following array
                     db.collection("users").document(currentUserID).updateData([
                         "following": FieldValue.arrayRemove([targetUserID])
                     ]) { error in
@@ -388,10 +507,10 @@ struct ContentView: View {
                             print("Error updating following: \(error.localizedDescription)")
                         } else {
                             print("Successfully unfollowed \(user)")
-                            // Update local state to reflect the change
                             if let index = followingUsers.firstIndex(of: user) {
                                 followingUsers.remove(at: index)
                             }
+                            fetchLeaderboardData()
                         }
                     }
                 }
@@ -399,6 +518,15 @@ struct ContentView: View {
         }
     }
 }
+
+struct LeaderboardEntry {
+    var id: String
+    var rank: Int
+    var name: String
+    var lastName: String
+    var elo: Double
+}
+
 struct AccountEditView: View {
     @Binding var selectedTab: String
     @AppStorage("irIelogojies") private var irIelogojies = false
