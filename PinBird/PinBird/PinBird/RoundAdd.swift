@@ -11,7 +11,6 @@ import FirebaseAuth
 
 struct GolfRoundView: View {
     @State private var courseName: String = ""
-    @State private var coursePar: String = ""
     @State private var slopeRating: String = ""
     @State private var currentHole: Int = 0
     @State private var holeData: [Hole] = Array(repeating: Hole(), count: 18)
@@ -31,7 +30,7 @@ struct GolfRoundView: View {
                     saveStatistics()
                 }
             } else if currentHole == 0 {
-                CourseSetupView(courseName: $courseName, coursePar: $coursePar, slopeRating: $slopeRating, startRound: {
+                CourseSetupView(courseName: $courseName, slopeRating: $slopeRating, startRound: {
                     currentHole = 1
                     fetchCurrentElo()
                 })
@@ -134,10 +133,13 @@ struct GolfRoundView: View {
         let par5s = holeData.filter { $0.par == 5 }
 
         let totalStrokes = holeData.reduce(0) { $0 + $1.score }
-        let averageScore = Double(totalStrokes) / 18.0
+        let totalPar = holeData.reduce(0) { $0 + $1.par }
+        
+        // Store the total strokes for the round, not the average per hole
+        let roundScore = totalStrokes
 
         let stats = RoundStats(
-            averagePutts: Double(totalPutts) / 18.0,
+            averagePutts: Double(totalPutts), // Store total putts for the round, not per hole
             greensInRegulation: Double(greensHit) / 18.0,
             fairwayHitPercentage: Double(fairwaysHit) / 18.0,
             greenMissLeftPercentage: Double(greenMissLeft) / 18.0,
@@ -149,17 +151,23 @@ struct GolfRoundView: View {
             par3Average: par3s.isEmpty ? 0 : Double(par3s.reduce(0) { $0 + $1.score }) / Double(par3s.count),
             par4Average: par4s.isEmpty ? 0 : Double(par4s.reduce(0) { $0 + $1.score }) / Double(par4s.count),
             par5Average: par5s.isEmpty ? 0 : Double(par5s.reduce(0) { $0 + $1.score }) / Double(par5s.count),
-            averageScore: averageScore
+            averageScore: Double(roundScore)
         )
 
         ref.getDocument { snapshot, error in
             var roundsPlayed = 0
             var oldStats: [String: Double] = [:]
+            var previousTotalScore: Double = 0
 
             if let data = snapshot?.data() {
                 roundsPlayed = data["roundsPlayed"] as? Int ?? 0
                 for key in RoundStats.keys {
                     oldStats[key] = data[key] as? Double ?? 0
+                }
+                
+                // If we already have an average score, calculate the total accumulated score
+                if let currentAvg = data["averageScore"] as? Double {
+                    previousTotalScore = currentAvg * Double(roundsPlayed)
                 }
             }
 
@@ -176,8 +184,16 @@ struct GolfRoundView: View {
             }
 
             for key in RoundStats.keys {
-                let newValue = stats[keyPath: RoundStats.keyPaths[key]!]
-                updated[key] = avg(key, newValue)
+                if key == "averageScore" || key == "averagePutts" {
+                    // Special handling for averageScore and averagePutts - calculate true average of all rounds
+                    let previousTotal = (oldStats[key] ?? 0) * Double(roundsPlayed)
+                    let newValue = stats[keyPath: RoundStats.keyPaths[key]!]
+                    let newTotal = previousTotal + newValue
+                    updated[key] = newTotal / Double(roundsPlayed + 1)
+                } else {
+                    let newValue = stats[keyPath: RoundStats.keyPaths[key]!]
+                    updated[key] = avg(key, newValue)
+                }
             }
 
             ref.setData(updated, merge: true)
@@ -407,9 +423,12 @@ struct ScorecardView: View {
 
 struct CourseSetupView: View {
     @Binding var courseName: String
-    @Binding var coursePar: String
     @Binding var slopeRating: String
     var startRound: () -> Void
+    
+    var isFormValid: Bool {
+        !courseName.isEmpty && !slopeRating.isEmpty
+    }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -417,10 +436,6 @@ struct CourseSetupView: View {
                 .font(.largeTitle)
 
             TextField("Enter Course Name", text: $courseName)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-
-            TextField("Enter Course Par", text: $coursePar)
-                .keyboardType(.numberPad)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
 
             TextField("Enter Slope Rating", text: $slopeRating)
@@ -431,9 +446,10 @@ struct CourseSetupView: View {
                 startRound()
             }
             .padding()
-            .background(Color.blue)
+            .background(isFormValid ? Color.blue : Color.gray)
             .foregroundColor(.white)
             .cornerRadius(10)
+            .disabled(!isFormValid)
         }
         .padding(12)
     }
