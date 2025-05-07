@@ -65,32 +65,70 @@ struct ContentView: View {
     @State private var userRank: Int = 0
     @State private var userElo: Double = 0.0
     @State private var userLastName: String = ""
+    @State private var showingSearchResults = false
 
     @Binding var selectedTab: String
 
     private let db = Firestore.firestore()
-
+    
+    private let primaryColor = Color(red: 0.12, green: 0.64, blue: 0.27)
+    private let secondaryColor = Color(red: 0.95, green: 0.95, blue: 0.97)
+    private let accentColor = Color(red: 0.0, green: 0.48, blue: 0.8)
+    private let cardBgColor = Color.white
+    
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading) {
-                TextField("Search by First or Last Name", text: $searchQuery)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding([.top, .horizontal])
-                    .onChange(of: searchQuery, perform: { value in
-                        filterUsers()
-                    })
+            VStack(alignment: .leading, spacing: 20) {
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.gray)
+                            .padding(.leading, 8)
+                        
+                        TextField("Search golfers", text: $searchQuery)
+                            .font(.system(size: 16))
+                            .padding(10)
+                            .onChange(of: searchQuery, perform: { value in
+                                filterUsers()
+                                showingSearchResults = !searchQuery.isEmpty
+                            })
+                        
+                        if !searchQuery.isEmpty {
+                            Button(action: {
+                                searchQuery = ""
+                                showingSearchResults = false
+                                filteredUsers = []
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                                    .padding(.trailing, 8)
+                            }
+                        }
+                    }
+                    .background(secondaryColor)
+                    .cornerRadius(15)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 15)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .padding(.horizontal)
+                }
                 
-                if !filteredUsers.isEmpty {
-                    VStack {
+
+                if showingSearchResults && !filteredUsers.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("Search Results")
-                            .font(.title2)
-                            .fontWeight(.semibold)
+                            .font(.headline)
                             .padding(.horizontal)
+                            .padding(.top, 8)
 
                         ForEach(filteredUsers, id: \.self) { user in
                             HStack {
                                 Text(user)
-                                    .padding([.top, .horizontal])
+                                    .font(.system(size: 16))
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal)
 
                                 Spacer()
 
@@ -102,29 +140,54 @@ struct ContentView: View {
                                     }
                                 }) {
                                     Text(isFollowing(user) ? "Unfollow" : "Follow")
+                                        .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
-                                        .padding(8)
-                                        .background(isFollowing(user) ? Color.red : Color.blue)
-                                        .cornerRadius(8)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(isFollowing(user) ? Color.red.opacity(0.8) : accentColor)
+                                        .cornerRadius(12)
                                 }
-                                .padding(.trailing, 16)
+                                .padding(.trailing)
+                            }
+                            .background(cardBgColor)
+                            .cornerRadius(10)
+                            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+                            .padding(.horizontal)
+                            
+                            if user != filteredUsers.last {
+                                Divider()
+                                    .padding(.horizontal, 16)
                             }
                         }
                     }
+                    .background(cardBgColor)
+                    .cornerRadius(15)
+                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
                 }
 
-                Text("Hello \(firstName)")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding([.top, .horizontal])
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Welcome back,")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                    
+                    Text(firstName)
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundColor(primaryColor)
+                }
+                .padding(.horizontal)
+                .padding(.top, showingSearchResults ? 0 : 8)
                 
-                VStack(alignment: .leading) {
+
+                VStack(alignment: .leading, spacing: 12) {
                     Text("Leaderboard")
                         .font(.title2)
                         .fontWeight(.semibold)
                         .padding(.horizontal)
                     
-                    VStack(spacing: 10) {
+                    VStack(spacing: 12) {
                         HStack {
                             Text("Rank")
                                 .font(.subheadline)
@@ -155,66 +218,86 @@ struct ContentView: View {
                             leaderboardRow(rank: userRank, name: firstName, lastName: userLastName, elo: userElo)
                         }
                     }
-                    .padding(.vertical, 8)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
+                    .padding(.vertical, 12)
+                    .background(cardBgColor)
+                    .cornerRadius(15)
+                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                     .padding(.horizontal)
+                }
+
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Your Stats")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal)
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                        statBox(title: "Total Rounds", value: "\(totalRounds)", icon: "flag.fill")
+                        statBox(title: "Avg Putts", value: String(format: "%.1f", avgPutts), icon: "circle.grid.cross.fill")
+                        statBox(title: "Fairway Hit %", value: String(format: "%.0f", fairwayHitPercentage * 100) + "%", icon: "arrow.up.and.down.and.arrow.left.and.right")
+                        statBox(title: "Green Hit %", value: String(format: "%.0f", greenHitPercentage * 100) + "%", icon: "leaf.fill")
+                    }
+                    .padding(.horizontal)
+
+                    HStack {
+                        Spacer()
+                        statBox(title: "Average Score", value: String(format: "%.1f", averageScore), icon: "rosette", isLarge: true)
+                            .frame(width: UIScreen.main.bounds.width * 0.85)
+                        Spacer()
+                    }
+                    .padding(.top, 4)
                 }
                 .padding(.top, 8)
 
-                Text("Your Stats")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal)
-                    .padding(.top, 8)
 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                    statBox(title: "Total Rounds", value: "\(totalRounds)")
-                    statBox(title: "Avg Putts", value: String(format: "%.1f", avgPutts))
-                    statBox(title: "Fairway Hit %", value: String(format: "%.0f", fairwayHitPercentage * 100) + "%")
-                    statBox(title: "Green Hit %", value: String(format: "%.0f", greenHitPercentage * 100) + "%")
-                }
-                .padding(.horizontal)
+                VStack(alignment: .leading, spacing: 16) {
 
-                HStack {
-                    Spacer()
-                    statBox(title: "Avg Score", value: String(format: "%.1f", averageScore))
-                        .frame(width: UIScreen.main.bounds.width * 0.85)
-                    Spacer()
-                }
-                .padding(.top, 8)
-
-                VStack(alignment: .leading) {
-                    Text("Fairway Miss Directions")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .padding([.top, .leading, .trailing])
-
-                    fairwayMissChart(missDirections: fairwayMissDirections)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(15)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "arrow.triangle.branch")
+                                .foregroundColor(primaryColor)
+                            
+                            Text("Fairway Miss Directions")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                        }
                         .padding(.horizontal)
-                }
 
-                VStack(alignment: .leading) {
-                    Text("Green Miss Directions")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        .padding([.top, .leading])
-
-                    directionalMissChart(missDirections: greenMissDirections)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(15)
+                        fairwayMissChart(missDirections: fairwayMissDirections)
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 8)
+                            .background(cardBgColor)
+                            .cornerRadius(15)
+                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            .padding(.horizontal)
+                    }
+                    
+                 
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Image(systemName: "target")
+                                .foregroundColor(primaryColor)
+                            
+                            Text("Green Miss Directions")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                        }
                         .padding(.horizontal)
-                }
 
-                Spacer()
+                        directionalMissChart(missDirections: greenMissDirections)
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 8)
+                            .background(cardBgColor)
+                            .cornerRadius(15)
+                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            .padding(.horizontal)
+                    }
+                }
+                .padding(.bottom, 24)
             }
         }
+        .background(Color(red: 0.97, green: 0.97, blue: 0.98))
         .onAppear(perform: {
             fetchUserStats()
             fetchFollowingUsers()
@@ -224,15 +307,18 @@ struct ContentView: View {
 
     private func leaderboardRow(rank: Int, name: String, lastName: String, elo: Double) -> some View {
         HStack {
-            Text("\(rank).")
+            Text("\(rank)")
                 .font(rank <= 3 ? .headline : .body)
                 .fontWeight(rank <= 3 ? .bold : .regular)
-                .foregroundColor(
-                    rank == 1 ? .yellow :
+                .foregroundColor(.white)
+                .frame(width: 28, height: 28)
+                .background(
+                    rank == 1 ? Color.yellow :
                     rank == 2 ? Color.gray :
-                    rank == 3 ? Color(red: 0.8, green: 0.5, blue: 0.2) : .primary
+                    rank == 3 ? Color(red: 0.8, green: 0.5, blue: 0.2) : accentColor.opacity(0.7)
                 )
-                .frame(width: 50, alignment: .leading)
+                .clipShape(Circle())
+                .padding(.trailing, 4)
             
             Text("\(name) \(lastName.isEmpty ? "" : String(lastName.first!)).")
                 .font(rank <= 3 ? .headline : .body)
@@ -246,24 +332,44 @@ struct ContentView: View {
                 .frame(width: 60, alignment: .trailing)
         }
         .padding(.horizontal)
+        .padding(.vertical, 4)
+        .background(rank == userRank ? secondaryColor : Color.clear)
+        .cornerRadius(8)
     }
 
-    private func statBox(title: String, value: String) -> some View {
-        VStack {
+    private func statBox(title: String, value: String, icon: String, isLarge: Bool = false) -> some View {
+        VStack(spacing: 12) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: isLarge ? 22 : 18))
+                    .foregroundColor(primaryColor)
+                
+                Spacer()
+            }
+            
+            HStack {
+                Spacer()
+                Text(value)
+                    .font(isLarge ? .system(size: 36, weight: .bold) : .system(size: 28, weight: .bold))
+                    .foregroundColor(accentColor)
+                Spacer()
+            }
+            
             Text(title)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-            Text(value)
-                .font(.title)
-                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, minHeight: 100)
-        .background(Color.blue.opacity(0.15))
-        .cornerRadius(12)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, minHeight: isLarge ? 120 : 100)
+        .background(cardBgColor)
+        .cornerRadius(15)
+        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
 
     private func directionalMissChart(missDirections: [String: Double]) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             HStack {
                 Spacer()
                 missDirectionBox(direction: "Long", percentage: missDirections["greenMissLongPercentage"] ?? 0.0)
@@ -273,7 +379,7 @@ struct ContentView: View {
             HStack {
                 missDirectionBox(direction: "Left", percentage: missDirections["greenMissLeftPercentage"] ?? 0.0)
                 Spacer()
-                missDirectionBox(direction: "Hit", percentage: greenHitPercentage)
+                missDirectionBox(direction: "Hit", percentage: greenHitPercentage, isHit: true)
                 Spacer()
                 missDirectionBox(direction: "Right", percentage: missDirections["greenMissRightPercentage"] ?? 0.0)
             }
@@ -291,25 +397,34 @@ struct ContentView: View {
             Spacer()
             missDirectionBox(direction: "Left", percentage: missDirections["fairwayMissLeftPercentage"] ?? 0.0)
             Spacer()
-            missDirectionBox(direction: "Hit", percentage: fairwayHitPercentage)
+            missDirectionBox(direction: "Hit", percentage: fairwayHitPercentage, isHit: true)
             Spacer()
             missDirectionBox(direction: "Right", percentage: missDirections["fairwayMissRightPercentage"] ?? 0.0)
             Spacer()
         }
     }
 
-    private func missDirectionBox(direction: String, percentage: Double) -> some View {
+    private func missDirectionBox(direction: String, percentage: Double, isHit: Bool = false) -> some View {
         VStack {
             Text(direction)
-                .font(.caption)
+                .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.gray)
+            
             Text(String(format: "%.0f%%", percentage * 100))
                 .font(.headline)
-                .frame(width: 50, height: 50)
-                .background(Color.green.opacity(0.2))
-                .cornerRadius(10)
+                .foregroundColor(isHit ? primaryColor : .primary)
+                .frame(width: 60, height: 60)
+                .background(
+                    isHit ? primaryColor.opacity(0.3) : secondaryColor
+                )
+                .cornerRadius(isHit ? 30 : 10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: isHit ? 30 : 10)
+                        .stroke(isHit ? primaryColor : Color.gray.opacity(0.3), lineWidth: 1)
+                )
         }
     }
+
 
     private func fetchUserStats() {
         guard let userID = Auth.auth().currentUser?.uid else { return }
@@ -433,6 +548,8 @@ struct ContentView: View {
             return
         }
         
+        guard let currentUserID = Auth.auth().currentUser?.uid else { return }
+        
         db.collection("users").getDocuments { snapshot, error in
             if let error = error {
                 print("Error fetching users: \(error.localizedDescription)")
@@ -440,6 +557,11 @@ struct ContentView: View {
             }
 
             filteredUsers = snapshot?.documents.compactMap { document in
+                let documentID = document.documentID
+                if documentID == currentUserID {
+                    return nil
+                }
+                
                 let data = document.data()
                 let firstName = data["name"] as? String ?? ""
                 let lastName = data["surname"] as? String ?? ""
@@ -531,120 +653,12 @@ struct ContentView: View {
         }
     }
 }
-
 struct LeaderboardEntry {
     var id: String
     var rank: Int
     var name: String
     var lastName: String
     var elo: Double
-}
-
-struct AccountEditView: View {
-    @Binding var selectedTab: String
-    @AppStorage("irIelogojies") private var irIelogojies = false
-    
-    @State private var firstName = ""
-    @State private var lastName = ""
-    @State private var handicap = ""
-    @State private var homeClub = ""
-    @Environment(\.presentationMode) var presentationMode
-    
-    private let db = Firestore.firestore()
-    
-    var body: some View {
-        VStack {
-            Text("Edit Account")
-                .font(.title)
-                .fontWeight(.bold)
-                .padding()
-            
-            TextField("First Name", text: $firstName)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-            
-            TextField("Last Name", text: $lastName)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-            
-            TextField("Handicap", text: $handicap)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-            
-            TextField("Home Club", text: $homeClub)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-            
-            Button(action: saveChanges) {
-                Text("Save Changes")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .padding()
-            
-            Button(action: logOut) {
-                Text("Log Out")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.red)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .padding()
-            
-            Spacer()
-        }
-        .onAppear(perform: fetchUserData)
-    }
-    
-    private func fetchUserData() {
-        guard let userID = Auth.auth().currentUser?.uid else { return }
-        db.collection("users").document(userID).getDocument { document, error in
-            if let document = document, document.exists {
-                let data = document.data()
-                firstName = data?["name"] as? String ?? ""
-                lastName = data?["surname"] as? String ?? ""
-                handicap = data?["handicap"] as? String ?? ""
-                homeClub = data?["homeClub"] as? String ?? ""
-            }
-        }
-    }
-    
-    private func saveChanges() {
-        guard let userID = Auth.auth().currentUser?.uid else { return }
-        let updatedData: [String: Any] = [
-            "name": firstName,
-            "surname": lastName,
-            "handicap": handicap,
-            "homeClub": homeClub
-        ]
-        
-        db.collection("users").document(userID).updateData(updatedData) { error in
-            if let error = error {
-                print("Error updating data: \(error.localizedDescription)")
-            } else {
-                print("Profile updated successfully")
-            }
-        }
-    }
-    
-    private func logOut() {
-        do {
-            try Auth.auth().signOut()
-            irIelogojies = false
-            
-
-            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
-            let window = windowScene?.windows.first
-            window?.rootViewController = UIHostingController(rootView: AccountView())
-            window?.makeKeyAndVisible()
-        } catch {
-            print("Error signing out: \(error.localizedDescription)")
-        }
-    }
 }
 
 struct FooterView: View {

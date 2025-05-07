@@ -39,6 +39,7 @@
 		D310091A2D93D6D000CE2A6B /* RoundAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = D31009192D93D6CF00CE2A6B /* RoundAdd.swift */; };
 		D310091C2D93DBA100CE2A6B /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D310091B2D93DBA100CE2A6B /* AccountView.swift */; };
 		D3A277F92DA6DE9F00C58CA8 /* TreninView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3A277F82DA6DE9F00C58CA8 /* TreninView.swift */; };
+		D3FEC06B2DCB840100328C3C /* AccountEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FEC06A2DCB840100328C3C /* AccountEditView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +52,7 @@
 		D31009192D93D6CF00CE2A6B /* RoundAdd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoundAdd.swift; sourceTree = "<group>"; };
 		D310091B2D93DBA100CE2A6B /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		D3A277F82DA6DE9F00C58CA8 /* TreninView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TreninView.swift; sourceTree = "<group>"; };
+		D3FEC06A2DCB840100328C3C /* AccountEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountEditView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +117,7 @@
 				D31008DE2D93255700CE2A6B /* Preview Content */,
 				D310091B2D93DBA100CE2A6B /* AccountView.swift */,
 				D3A277F82DA6DE9F00C58CA8 /* TreninView.swift */,
+				D3FEC06A2DCB840100328C3C /* AccountEditView.swift */,
 			);
 			path = PinBird;
 			sourceTree = "<group>";
@@ -231,6 +234,7 @@
 				D31008DB2D93255100CE2A6B /* ContentView.swift in Sources */,
 				D3A277F92DA6DE9F00C58CA8 /* TreninView.swift in Sources */,
 				D31008D92D93255100CE2A6B /* PinBirdApp.swift in Sources */,
+				D3FEC06B2DCB840100328C3C /* AccountEditView.swift in Sources */,
 				D310091A2D93D6D000CE2A6B /* RoundAdd.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
