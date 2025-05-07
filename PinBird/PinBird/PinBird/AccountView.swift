@@ -15,7 +15,13 @@ struct AccountView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var selectedTab = "home"
+    @State private var errorMessage = ""
+    @State private var showError = false
     @AppStorage("irIelogojies") private var irIelogojies = false
+    
+    private var isLoginFormValid: Bool {
+        !email.isEmpty && !password.isEmpty
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,6 +35,14 @@ struct AccountView: View {
                         .multilineTextAlignment(.center)
                         .padding(.bottom)
                     
+                    if showError {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .font(.subheadline)
+                            .padding(.bottom, 5)
+                            .multilineTextAlignment(.center)
+                    }
+                    
                     TextField("Email", text: $email).textFieldStyle(RoundedBorderTextFieldStyle())
                     SecureField("Password", text: $password).textFieldStyle(RoundedBorderTextFieldStyle())
                     
@@ -36,9 +50,10 @@ struct AccountView: View {
                         login()
                     }
                     .padding()
-                    .background(Color.green)
+                    .background(isLoginFormValid ? Color.green : Color.gray)
                     .foregroundColor(.white)
                     .cornerRadius(10)
+                    .disabled(!isLoginFormValid)
                     
                     NavigationLink(destination: SignUpView()) {
                         Text("Don't have an account? Sign Up")
@@ -52,9 +67,16 @@ struct AccountView: View {
     }
     
     func login() {
+        if email.isEmpty || password.isEmpty {
+            errorMessage = "Please enter both email and password"
+            showError = true
+            return
+        }
+        
         Auth.auth().signIn(withEmail: email, password: password) { result, error in
             if let error = error {
-                print(error.localizedDescription)
+                self.errorMessage = error.localizedDescription
+                self.showError = true
             } else {
                 irIelogojies = true
                 switchToGalvenaisView()
@@ -80,8 +102,17 @@ struct SignUpView: View {
     @State private var homeClub = ""
     @State private var gender = "Male"
     @State private var selectedTab = "home"
+    @State private var errorMessage = ""
+    @State private var showError = false
     
     @AppStorage("irIelogojies") private var irIelogojies = false
+    
+    private var isSignUpFormValid: Bool {
+        !email.isEmpty &&
+        password.count >= 8 &&
+        !name.isEmpty &&
+        !surname.isEmpty
+    }
 
     var body: some View {
         NavigationStack {
@@ -95,11 +126,23 @@ struct SignUpView: View {
                         .multilineTextAlignment(.center)
                         .padding(.bottom)
                     
+                    if showError {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .font(.subheadline)
+                            .padding(.bottom, 5)
+                            .multilineTextAlignment(.center)
+                    }
+                    
                     TextField("Email", text: $email).textFieldStyle(RoundedBorderTextFieldStyle())
                     SecureField("Password", text: $password).textFieldStyle(RoundedBorderTextFieldStyle())
                     TextField("First Name", text: $name).textFieldStyle(RoundedBorderTextFieldStyle())
                     TextField("Last Name", text: $surname).textFieldStyle(RoundedBorderTextFieldStyle())
-                    TextField("Handicap", text: $handicap).textFieldStyle(RoundedBorderTextFieldStyle())
+                    
+                    TextField("Handicap", text: $handicap)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .keyboardType(.decimalPad)
+                    
                     TextField("Home Club", text: $homeClub).textFieldStyle(RoundedBorderTextFieldStyle())
                     
                     Picker("Gender", selection: $gender) {
@@ -112,9 +155,10 @@ struct SignUpView: View {
                         registerUser()
                     }
                     .padding()
-                    .background(Color.green)
+                    .background(isSignUpFormValid ? Color.green : Color.gray)
                     .foregroundColor(.white)
                     .cornerRadius(10)
+                    .disabled(!isSignUpFormValid)
                     
                     NavigationLink(destination: AccountView()) {
                         Text("Already have an account? Log In")
@@ -126,10 +170,18 @@ struct SignUpView: View {
             }
         }
     }
+    
     func registerUser() {
+        if password.count < 8 {
+            errorMessage = "Password must be at least 8 characters long"
+            showError = true
+            return
+        }
+        
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
-                print(error.localizedDescription)
+                self.errorMessage = error.localizedDescription
+                self.showError = true
             } else if let user = result?.user {
                 let db = Firestore.firestore()
                 let userData: [String: Any] = [
@@ -162,7 +214,8 @@ struct SignUpView: View {
 
                 db.collection("users").document(user.uid).setData(userData) { error in
                     if let error = error {
-                        print("Error saving user data: \(error.localizedDescription)")
+                        self.errorMessage = "Error saving user data: \(error.localizedDescription)"
+                        self.showError = true
                     } else {
                         irIelogojies = true
                         switchToGalvenaisView()
@@ -180,6 +233,8 @@ struct SignUpView: View {
         }
     }
 }
+
+
 
 #Preview {
     AccountView()

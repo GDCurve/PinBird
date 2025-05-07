@@ -12,6 +12,7 @@ import FirebaseFirestore
 
 struct GalvenaisView: View {
     @State var selectedTab = "home"
+    @AppStorage("irIelogojies") private var irIelogojies = false
 
     var body: some View {
         NavigationView {
@@ -27,6 +28,19 @@ struct GalvenaisView: View {
                 }
                 
                 FooterView(selectedTab: $selectedTab)
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .onAppear {
+            if !irIelogojies {
+                // Use SwiftUI navigation instead of UIKit Scene architecture
+                selectedTab = "account"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+                    let window = windowScene?.windows.first
+                    window?.rootViewController = UIHostingController(rootView: AccountView())
+                    window?.makeKeyAndVisible()
+                }
             }
         }
     }
@@ -535,6 +549,7 @@ struct AccountEditView: View {
     @State private var lastName = ""
     @State private var handicap = ""
     @State private var homeClub = ""
+    @Environment(\.presentationMode) var presentationMode
     
     private let db = Firestore.firestore()
     
@@ -621,7 +636,12 @@ struct AccountEditView: View {
         do {
             try Auth.auth().signOut()
             irIelogojies = false
-            selectedTab = "home"
+            
+            // Use modern UIKit windowing approach
+            let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let window = windowScene?.windows.first
+            window?.rootViewController = UIHostingController(rootView: AccountView())
+            window?.makeKeyAndVisible()
         } catch {
             print("Error signing out: \(error.localizedDescription)")
         }
