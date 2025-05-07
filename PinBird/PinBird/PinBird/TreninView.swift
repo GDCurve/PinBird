@@ -284,9 +284,9 @@ struct TreninView: View {
                     Text(String(format: "%.0f%%", longMiss * 100))
                         .font(.caption)
                         .foregroundColor(.white)
-                        .frame(width: 60, height: 30)
-                        .background(Color.blue.opacity(0.8))
-                        .cornerRadius(8, corners: [.topLeft, .topRight])
+                        .frame(width: 60, height: 60)
+                        .background(Color.green.opacity(0.8))
+                        .cornerRadius(8, corners: [.allCorners])
                 }
                 .frame(width: 60)
                 .padding(.bottom, 4)
@@ -295,9 +295,9 @@ struct TreninView: View {
                     Text(String(format: "%.0f%%", leftMiss * 100))
                         .font(.caption)
                         .foregroundColor(.white)
-                        .frame(width: 60, height: 30)
-                        .background(Color.red.opacity(0.8))
-                        .cornerRadius(8, corners: [.topLeft, .bottomLeft])
+                        .frame(width: 60, height: 60)
+                        .background(Color.green.opacity(0.8))
+                        .cornerRadius(8, corners: [.allCorners])
                     
                     ZStack {
                         Circle()
@@ -313,18 +313,18 @@ struct TreninView: View {
                     Text(String(format: "%.0f%%", rightMiss * 100))
                         .font(.caption)
                         .foregroundColor(.white)
-                        .frame(width: 60, height: 30)
-                        .background(Color.purple.opacity(0.8))
-                        .cornerRadius(8, corners: [.topRight, .bottomRight])
+                        .frame(width: 60, height: 60)
+                        .background(Color.green.opacity(0.8))
+                        .cornerRadius(8, corners: [.allCorners])
                 }
                 
                 HStack(spacing: 0) {
                     Text(String(format: "%.0f%%", shortMiss * 100))
                         .font(.caption)
                         .foregroundColor(.white)
-                        .frame(width: 60, height: 30)
-                        .background(Color.orange.opacity(0.8))
-                        .cornerRadius(8, corners: [.bottomLeft, .bottomRight])
+                        .frame(width: 60, height: 60)
+                        .background(Color.green.opacity(0.8))
+                        .cornerRadius(8, corners: [.allCorners])
                 }
                 .frame(width: 60)
                 .padding(.top, 4)
@@ -369,13 +369,13 @@ struct TreninView: View {
             ZStack(alignment: .leading) {
 
                 Rectangle()
-                    .frame(width: 200, height: 20)
+                    .frame(width: 200, height: 40)
                     .foregroundColor(Color.gray.opacity(0.2))
                     .cornerRadius(10)
                 
 
                 Rectangle()
-                    .frame(width: 200 * leftValue, height: 20)
+                    .frame(width: 200 * leftValue, height: 40)
                     .foregroundColor(.red)
                     .cornerRadius(10, corners: [.topLeft, .bottomLeft])
                 
@@ -383,7 +383,7 @@ struct TreninView: View {
                 HStack {
                     Spacer().frame(width: 200 * leftValue)
                     Rectangle()
-                        .frame(width: 200 * centerValue, height: 20)
+                        .frame(width: 200 * centerValue, height: 40)
                         .foregroundColor(.green)
                 }
                 
@@ -391,7 +391,7 @@ struct TreninView: View {
                 HStack {
                     Spacer().frame(width: 200 * (leftValue + centerValue))
                     Rectangle()
-                        .frame(width: 200 * rightValue, height: 20)
+                        .frame(width: 200 * rightValue, height: 40)
                         .foregroundColor(.blue)
                         .cornerRadius(10, corners: [.topRight, .bottomRight])
                 }
@@ -401,12 +401,14 @@ struct TreninView: View {
                     Text(String(format: "%.0f%%", leftValue * 100))
                         .font(.caption2)
                         .foregroundColor(.white)
+                        .bold()
                         .padding(.leading, 8)
                     
                     Spacer()
                     
                     Text(String(format: "%.0f%%", centerValue * 100))
                         .font(.caption2)
+                        .bold()
                         .foregroundColor(.white)
                     
                     Spacer()
@@ -414,6 +416,7 @@ struct TreninView: View {
                     Text(String(format: "%.0f%%", rightValue * 100))
                         .font(.caption2)
                         .foregroundColor(.white)
+                        .bold()
                         .padding(.trailing, 8)
                 }
             }

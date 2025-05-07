@@ -75,7 +75,8 @@ struct GolfRoundView: View {
         let totalPar = holeData.reduce(0) { $0 + $1.par }
         let totalPutts = holeData.reduce(0) { $0 + $1.putts }
         let greensHit = holeData.filter { $0.missedGreen == .hitGreen }.count
-        let fairwaysHit = holeData.filter { $0.missDirection == .center }.count
+        let fairwayHoles = holeData.filter { $0.par > 3 }
+        let fairwaysHit = fairwayHoles.filter { $0.missDirection == .center }.count
         let totalToPar = totalStrokes - totalPar
         
         let baseEloChange: Double = 20.0
@@ -89,7 +90,8 @@ struct GolfRoundView: View {
         let girPercentage = Double(greensHit) / 18.0
         let girFactor = (girPercentage - 0.5) * girWeight
         
-        let fairwayPercentage = Double(fairwaysHit) / 14.0
+        let fairwayCount = fairwayHoles.count
+        let fairwayPercentage = fairwayCount > 0 ? Double(fairwaysHit) / Double(fairwayCount) : 0.0
         let fairwayFactor = (fairwayPercentage - 0.5) * fairwayWeight
         
         var scoreBonus = 0.0
@@ -121,13 +123,15 @@ struct GolfRoundView: View {
 
         let totalPutts = holeData.reduce(0) { $0 + $1.putts }
         let greensHit = holeData.filter { $0.missedGreen == .hitGreen }.count
-        let fairwaysHit = holeData.filter { $0.missDirection == .center }.count
+        let fairwayHoles = holeData.filter { $0.par > 3 }
+        let fairwaysHit = fairwayHoles.filter { $0.missDirection == .center }.count
+        let fairwayCount = fairwayHoles.count
         let greenMissLeft = holeData.filter { $0.missedGreen == .left }.count
         let greenMissRight = holeData.filter { $0.missedGreen == .right }.count
         let greenMissShort = holeData.filter { $0.missedGreen == .short }.count
         let greenMissLong = holeData.filter { $0.missedGreen == .long }.count
-        let fairwayMissLeft = holeData.filter { $0.missDirection == .left }.count
-        let fairwayMissRight = holeData.filter { $0.missDirection == .right }.count
+        let fairwayMissLeft = fairwayHoles.filter { $0.missDirection == .left }.count
+        let fairwayMissRight = fairwayHoles.filter { $0.missDirection == .right }.count
         let par3s = holeData.filter { $0.par == 3 }
         let par4s = holeData.filter { $0.par == 4 }
         let par5s = holeData.filter { $0.par == 5 }
@@ -135,19 +139,18 @@ struct GolfRoundView: View {
         let totalStrokes = holeData.reduce(0) { $0 + $1.score }
         let totalPar = holeData.reduce(0) { $0 + $1.par }
         
-
         let roundScore = totalStrokes
 
         let stats = RoundStats(
             averagePutts: Double(totalPutts),
             greensInRegulation: Double(greensHit) / 18.0,
-            fairwayHitPercentage: Double(fairwaysHit) / 18.0,
+            fairwayHitPercentage: fairwayCount > 0 ? Double(fairwaysHit) / Double(fairwayCount) : 0.0,
             greenMissLeftPercentage: Double(greenMissLeft) / 18.0,
             greenMissRightPercentage: Double(greenMissRight) / 18.0,
             greenMissShortPercentage: Double(greenMissShort) / 18.0,
             greenMissLongPercentage: Double(greenMissLong) / 18.0,
-            fairwayMissLeftPercentage: Double(fairwayMissLeft) / 18.0,
-            fairwayMissRightPercentage: Double(fairwayMissRight) / 18.0,
+            fairwayMissLeftPercentage: fairwayCount > 0 ? Double(fairwayMissLeft) / Double(fairwayCount) : 0.0,
+            fairwayMissRightPercentage: fairwayCount > 0 ? Double(fairwayMissRight) / Double(fairwayCount) : 0.0,
             par3Average: par3s.isEmpty ? 0 : Double(par3s.reduce(0) { $0 + $1.score }) / Double(par3s.count),
             par4Average: par4s.isEmpty ? 0 : Double(par4s.reduce(0) { $0 + $1.score }) / Double(par4s.count),
             par5Average: par5s.isEmpty ? 0 : Double(par5s.reduce(0) { $0 + $1.score }) / Double(par5s.count),
@@ -165,7 +168,6 @@ struct GolfRoundView: View {
                     oldStats[key] = data[key] as? Double ?? 0
                 }
                 
-
                 if let currentAvg = data["averageScore"] as? Double {
                     previousTotalScore = currentAvg * Double(roundsPlayed)
                 }
@@ -274,8 +276,12 @@ struct ScorecardView: View {
         holeData.reduce(0) { $0 + $1.putts }
     }
 
+    var fairwayHoles: [Hole] {
+        holeData.filter { $0.par > 3 }
+    }
+    
     var fairwaysHit: Int {
-        holeData.filter { $0.missDirection == .center }.count
+        fairwayHoles.filter { $0.missDirection == .center }.count
     }
 
     var greensHit: Int {
@@ -293,132 +299,186 @@ struct ScorecardView: View {
 
     var fairwayMisses: (left: Int, right: Int) {
         (
-            holeData.filter { $0.missDirection == .left }.count,
-            holeData.filter { $0.missDirection == .right }.count
+            fairwayHoles.filter { $0.missDirection == .left }.count,
+            fairwayHoles.filter { $0.missDirection == .right }.count
         )
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                Text("Scorecard")
-                    .font(.largeTitle)
-                    .bold()
-
-                Text("Course: \(courseName)")
-                    .font(.title2)
-
-                Text("Par: \(totalPar)")
-                    .font(.headline)
-
-                VStack(alignment: .leading) {
+        VStack(spacing: 10) {
+            VStack(spacing: 4) {
+                Text(courseName)
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .lineLimit(1)
+                
+                Text("Total: \(totalStrokes) | Par: \(totalPar)")
+                    .font(.subheadline)
+                
+                HStack(spacing: 5) {
+                    Text("Score:")
+                    Text("\(toPar > 0 ? "+" : "")\(toPar)")
+                        .fontWeight(.bold)
+                        .foregroundColor(toPar > 0 ? .blue : (toPar < 0 ? .red : .primary))
+                }
+                .font(.headline)
+            }
+            .padding(.bottom, 2)
+            
+            Divider()
+            
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("Front 9")
-                        .font(.headline)
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .padding(.bottom, 2)
+                    
                     HStack(spacing: 4) {
                         ForEach(0..<9, id: \.self) { index in
                             let hole = holeData[index]
                             let diff = hole.score - hole.par
-                            let color: Color = diff == -1 ? .red : (diff == 1 ? .blue : .gray)
-
-                            VStack(spacing: 4) {
-                                Text("H\(index + 1)")
-                                    .font(.caption2)
+                            let color: Color = diff < 0 ? .red : (diff > 0 ? .blue : .gray)
+                            
+                            VStack(spacing: 2) {
+                                Text("\(index + 1)")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.secondary)
                                 Text("\(hole.score)")
-                                    .font(.caption)
-                                    .frame(width: 28, height: 28)
-                                    .background(Circle().fill(color))
+                                    .font(.system(size: 12))
+                                    .fontWeight(.medium)
+                                    .frame(width: 24, height: 24)
+                                    .background(Circle().fill(color.opacity(0.8)))
                                     .foregroundColor(.white)
                             }
                         }
                     }
                 }
-
-                VStack(alignment: .leading) {
+                
+                Spacer()
+            }
+            
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("Back 9")
-                        .font(.headline)
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .padding(.bottom, 2)
+                    
                     HStack(spacing: 4) {
                         ForEach(9..<18, id: \.self) { index in
                             let hole = holeData[index]
                             let diff = hole.score - hole.par
-                            let color: Color = diff == -1 ? .red : (diff == 1 ? .blue : .gray)
-
-                            VStack(spacing: 4) {
-                                Text("H\(index + 1)")
-                                    .font(.caption2)
+                            let color: Color = diff < 0 ? .red : (diff > 0 ? .blue : .gray)
+                            
+                            VStack(spacing: 2) {
+                                Text("\(index + 1)")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.secondary)
                                 Text("\(hole.score)")
-                                    .font(.caption)
-                                    .frame(width: 28, height: 28)
-                                    .background(Circle().fill(color))
+                                    .font(.system(size: 12))
+                                    .fontWeight(.medium)
+                                    .frame(width: 24, height: 24)
+                                    .background(Circle().fill(color.opacity(0.8)))
                                     .foregroundColor(.white)
                             }
                         }
                     }
                 }
-
-                VStack(spacing: 8) {
-                    Text("Total Strokes: \(totalStrokes)")
-                        .font(.title3)
-                    Text("Score to Par: \(toPar > 0 ? "+\(toPar)" : "\(toPar)")")
-                        .font(.title3)
-                        .foregroundColor(toPar > 0 ? .red : (toPar < 0 ? .green : .primary))
-                    Text("Total Putts: \(totalPutts)")
-                    Text("Fairways Hit: \(fairwaysHit)")
-                    Text("Greens Hit: \(greensHit)")
-
-                    VStack(spacing: 4) {
-                        Text("Green Misses:")
-                        Text("Left: \(greenMisses.left), Right: \(greenMisses.right)")
-                        Text("Short: \(greenMisses.short), Long: \(greenMisses.long)")
-                    }
-
-                    VStack(spacing: 4) {
-                        Text("Fairway Misses:")
-                        Text("Left: \(fairwayMisses.left), Right: \(fairwayMisses.right)")
-                    }
+                
+                Spacer()
+            }
+            
+            Divider()
+            
+            HStack(spacing: 16) {
+                statsColumn(title: "Performance", items: [
+                    ("Total Putts", "\(totalPutts)"),
+                    ("Fairways", "\(fairwaysHit)/\(fairwayHoles.count)"),
+                    ("Greens", "\(greensHit)/18")
+                ])
+                
+                Divider().frame(height: 80)
+                
+                statsColumn(title: "Misses", items: [
+                    ("FW Left/Right", "\(fairwayMisses.left)/\(fairwayMisses.right)"),
+                    ("GR Left/Right", "\(greenMisses.left)/\(greenMisses.right)"),
+                    ("GR Short/Long", "\(greenMisses.short)/\(greenMisses.long)")
+                ])
+            }
+            .padding(.vertical, 2)
+            
+            Divider()
+            
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.blue.opacity(0.1))
+                
+                VStack(spacing: 3) {
+                    Text("ELO")
+                        .font(.headline)
+                        .foregroundColor(.blue)
                     
-                    VStack(spacing: 6) {
-                        Text("ELO Change:")
-                            .font(.headline)
-                            .padding(.top, 8)
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text("\(String(format: "%.1f", currentElo + eloChange))")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
                         
                         Text("\(eloChange > 0 ? "+" : "")\(String(format: "%.1f", eloChange))")
-                            .font(.title2)
+                            .font(.callout)
                             .foregroundColor(eloChange >= 0 ? .green : .red)
-                            .fontWeight(.bold)
-                        
-                        Text("New ELO: \(String(format: "%.1f", currentElo + eloChange))")
-                            .font(.subheadline)
-                    }
-                    .padding(.vertical, 5)
-                    .padding(.horizontal, 15)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.1))
-                    )
-                }
-                .padding(.top, 10)
-                .font(.subheadline)
-
-                Button("Save Stats") {
-                    if !saveButtonDisabled {
-                        saveButtonDisabled = true
-                        onSave()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            dismiss()
-                        }
+                            .fontWeight(.medium)
                     }
                 }
-                .disabled(saveButtonDisabled)
-                .padding()
-                .background(saveButtonDisabled ? Color.gray : Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(8)
+                .padding(.vertical, 6)
             }
-            .padding()
+            .frame(height: 70)
+            
+            Button {
+                if !saveButtonDisabled {
+                    saveButtonDisabled = true
+                    onSave()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        dismiss()
+                    }
+                }
+            } label: {
+                Text("Save Round")
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .background(saveButtonDisabled ? Color.gray : Color.green)
+            .foregroundColor(.white)
+            .cornerRadius(12)
+            .disabled(saveButtonDisabled)
+            .padding(.top, 5)
+        }
+        .padding()
+        .frame(maxHeight: .infinity)
+    }
+    
+    private func statsColumn(title: String, items: [(String, String)]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+                .padding(.bottom, 2)
+            
+            ForEach(items, id: \.0) { item in
+                HStack(spacing: 4) {
+                    Text(item.0 + ":")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    Text(item.1)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+            }
         }
     }
 }
-
 
 struct CourseSetupView: View {
     @Binding var courseName: String
@@ -460,6 +520,10 @@ struct HoleEntryView: View {
     var totalScore: Int
     var nextHole: () -> Void
     var previousHole: () -> Void
+    
+    var showFairway: Bool {
+        hole.par > 3
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -473,21 +537,23 @@ struct HoleEntryView: View {
             HStack(spacing: 20) {
                 ScoreInput(label: "Par", value: $hole.par)
                 ScoreInput(label: "Strokes", value: $hole.score)
-                ScoreInput(label: "Putts", value: $hole.putts)
+                ScoreInput(label: "Putts", value: $hole.putts, allowZero: true)
             }
 
-            Text("Fairway Hit?")
-                .font(.headline)
+            if showFairway {
+                Text("Fairway Hit?")
+                    .font(.headline)
 
-            HStack(spacing: 8) {
-                MissButton(label: "Left", isSelected: hole.missDirection == .left, isSquare: false) {
-                    hole.missDirection = .left
-                }
-                MissButton(label: "Fairway", isSelected: hole.missDirection == .center, isSquare: false) {
-                    hole.missDirection = .center
-                }
-                MissButton(label: "Right", isSelected: hole.missDirection == .right, isSquare: false) {
-                    hole.missDirection = .right
+                HStack(spacing: 8) {
+                    MissButton(label: "Left", isSelected: hole.missDirection == .left, isSquare: false) {
+                        hole.missDirection = .left
+                    }
+                    MissButton(label: "Fairway", isSelected: hole.missDirection == .center, isSquare: false) {
+                        hole.missDirection = .center
+                    }
+                    MissButton(label: "Right", isSelected: hole.missDirection == .right, isSquare: false) {
+                        hole.missDirection = .right
+                    }
                 }
             }
 
@@ -560,6 +626,7 @@ enum MissedGreen {
 struct ScoreInput: View {
     var label: String
     @Binding var value: Int
+    var allowZero: Bool = false
 
     var body: some View {
         VStack {
@@ -567,7 +634,11 @@ struct ScoreInput: View {
                 .font(.headline)
             HStack {
                 Button("-") {
-                    if value > 1 { value -= 1 }
+                    if allowZero && value > 0 {
+                        value -= 1
+                    } else if !allowZero && value > 1 {
+                        value -= 1
+                    }
                 }
                 .padding(6)
 
