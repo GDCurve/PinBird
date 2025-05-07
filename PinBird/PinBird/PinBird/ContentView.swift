@@ -33,7 +33,6 @@ struct GalvenaisView: View {
         .navigationBarBackButtonHidden(true)
         .onAppear {
             if !irIelogojies {
-                // Use SwiftUI navigation instead of UIKit Scene architecture
                 selectedTab = "account"
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
@@ -637,7 +636,7 @@ struct AccountEditView: View {
             try Auth.auth().signOut()
             irIelogojies = false
             
-            // Use modern UIKit windowing approach
+
             let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
             let window = windowScene?.windows.first
             window?.rootViewController = UIHostingController(rootView: AccountView())
