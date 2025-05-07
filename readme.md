@@ -28,3 +28,6 @@
 *"Golfs ir 90 procenti galvā un 10 procenti fiziskais."* – Jack Nicklaus  
 
 Paceliet savu spēli jaunā līmenī ar **Pinbird**!  
+
+## Kā lokāli palaist projektu (Pasniedzējam)
+Vislabākais un man šķiet viens no vienīgajiem veidiem ir to testēt manā telefonā, jo ja nevēlas maksāt par developer account, aplikāciju var palaist tikai uz savas ierīces.
