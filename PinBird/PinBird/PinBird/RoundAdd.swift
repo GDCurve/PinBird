@@ -135,11 +135,11 @@ struct GolfRoundView: View {
         let totalStrokes = holeData.reduce(0) { $0 + $1.score }
         let totalPar = holeData.reduce(0) { $0 + $1.par }
         
-        // Store the total strokes for the round, not the average per hole
+
         let roundScore = totalStrokes
 
         let stats = RoundStats(
-            averagePutts: Double(totalPutts), // Store total putts for the round, not per hole
+            averagePutts: Double(totalPutts),
             greensInRegulation: Double(greensHit) / 18.0,
             fairwayHitPercentage: Double(fairwaysHit) / 18.0,
             greenMissLeftPercentage: Double(greenMissLeft) / 18.0,
@@ -165,7 +165,7 @@ struct GolfRoundView: View {
                     oldStats[key] = data[key] as? Double ?? 0
                 }
                 
-                // If we already have an average score, calculate the total accumulated score
+
                 if let currentAvg = data["averageScore"] as? Double {
                     previousTotalScore = currentAvg * Double(roundsPlayed)
                 }
@@ -185,7 +185,6 @@ struct GolfRoundView: View {
 
             for key in RoundStats.keys {
                 if key == "averageScore" || key == "averagePutts" {
-                    // Special handling for averageScore and averagePutts - calculate true average of all rounds
                     let previousTotal = (oldStats[key] ?? 0) * Double(roundsPlayed)
                     let newValue = stats[keyPath: RoundStats.keyPaths[key]!]
                     let newTotal = previousTotal + newValue
