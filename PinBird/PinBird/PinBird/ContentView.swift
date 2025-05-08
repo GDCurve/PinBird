@@ -13,6 +13,7 @@ import FirebaseFirestore
 struct GalvenaisView: View {
     @State var selectedTab = "home"
     @AppStorage("irIelogojies") private var irIelogojies = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationView {
@@ -68,13 +69,16 @@ struct ContentView: View {
     @State private var showingSearchResults = false
 
     @Binding var selectedTab: String
+    @Environment(\.colorScheme) private var colorScheme
 
     private let db = Firestore.firestore()
     
-    private let primaryColor = Color(red: 0.12, green: 0.64, blue: 0.27)
-    private let secondaryColor = Color(red: 0.95, green: 0.95, blue: 0.97)
-    private let accentColor = Color(red: 0.0, green: 0.48, blue: 0.8)
-    private let cardBgColor = Color.white
+    private var primaryColor: Color { Color(red: 0.12, green: 0.64, blue: 0.27) }
+    private var secondaryColor: Color { colorScheme == .dark ? Color(red: 0.2, green: 0.2, blue: 0.22) : Color(red: 0.95, green: 0.95, blue: 0.97) }
+    private var accentColor: Color { Color(red: 0.0, green: 0.48, blue: 0.8) }
+    private var cardBgColor: Color { colorScheme == .dark ? Color(red: 0.15, green: 0.15, blue: 0.17) : Color.white }
+    private var textColor: Color { colorScheme == .dark ? Color.white : Color.primary }
+    private var secondaryTextColor: Color { colorScheme == .dark ? Color(red: 0.8, green: 0.8, blue: 0.85) : Color.secondary }
     
     var body: some View {
         ScrollView {
@@ -122,6 +126,7 @@ struct ContentView: View {
                             .font(.headline)
                             .padding(.horizontal)
                             .padding(.top, 8)
+                            .foregroundColor(textColor)
 
                         ForEach(filteredUsers, id: \.self) { user in
                             HStack {
@@ -129,6 +134,7 @@ struct ContentView: View {
                                     .font(.system(size: 16))
                                     .padding(.vertical, 8)
                                     .padding(.horizontal)
+                                    .foregroundColor(textColor)
 
                                 Spacer()
 
@@ -151,7 +157,7 @@ struct ContentView: View {
                             }
                             .background(cardBgColor)
                             .cornerRadius(10)
-                            .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
+                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 1)
                             .padding(.horizontal)
                             
                             if user != filteredUsers.last {
@@ -162,7 +168,7 @@ struct ContentView: View {
                     }
                     .background(cardBgColor)
                     .cornerRadius(15)
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 4, x: 0, y: 2)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
                 }
@@ -171,7 +177,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Welcome back,")
                         .font(.title3)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(secondaryTextColor)
                     
                     Text(firstName)
                         .font(.system(size: 36, weight: .bold))
@@ -186,23 +192,24 @@ struct ContentView: View {
                         .font(.title2)
                         .fontWeight(.semibold)
                         .padding(.horizontal)
+                        .foregroundColor(textColor)
                     
                     VStack(spacing: 12) {
                         HStack {
                             Text("Rank")
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(secondaryTextColor)
                                 .frame(width: 50, alignment: .leading)
                             
                             Text("Player")
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(secondaryTextColor)
                             
                             Spacer()
                             
                             Text("ELO")
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(secondaryTextColor)
                                 .frame(width: 60, alignment: .trailing)
                         }
                         .padding(.horizontal)
@@ -221,7 +228,7 @@ struct ContentView: View {
                     .padding(.vertical, 12)
                     .background(cardBgColor)
                     .cornerRadius(15)
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 4, x: 0, y: 2)
                     .padding(.horizontal)
                 }
 
@@ -231,6 +238,7 @@ struct ContentView: View {
                         .font(.title2)
                         .fontWeight(.semibold)
                         .padding(.horizontal)
+                        .foregroundColor(textColor)
 
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                         statBox(title: "Total Rounds", value: "\(totalRounds)", icon: "flag.fill")
@@ -261,6 +269,7 @@ struct ContentView: View {
                             Text("Fairway Miss Directions")
                                 .font(.title3)
                                 .fontWeight(.semibold)
+                                .foregroundColor(textColor)
                         }
                         .padding(.horizontal)
 
@@ -269,7 +278,7 @@ struct ContentView: View {
                             .padding(.horizontal, 8)
                             .background(cardBgColor)
                             .cornerRadius(15)
-                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 4, x: 0, y: 2)
                             .padding(.horizontal)
                     }
                     
@@ -282,6 +291,7 @@ struct ContentView: View {
                             Text("Green Miss Directions")
                                 .font(.title3)
                                 .fontWeight(.semibold)
+                                .foregroundColor(textColor)
                         }
                         .padding(.horizontal)
 
@@ -290,14 +300,14 @@ struct ContentView: View {
                             .padding(.horizontal, 8)
                             .background(cardBgColor)
                             .cornerRadius(15)
-                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 4, x: 0, y: 2)
                             .padding(.horizontal)
                     }
                 }
                 .padding(.bottom, 24)
             }
         }
-        .background(Color(red: 0.97, green: 0.97, blue: 0.98))
+        .background(colorScheme == .dark ? Color(red: 0.1, green: 0.1, blue: 0.12) : Color(red: 0.97, green: 0.97, blue: 0.98))
         .onAppear(perform: {
             fetchUserStats()
             fetchFollowingUsers()
@@ -323,12 +333,14 @@ struct ContentView: View {
             Text("\(name) \(lastName.isEmpty ? "" : String(lastName.first!)).")
                 .font(rank <= 3 ? .headline : .body)
                 .fontWeight(rank <= 3 ? .bold : .regular)
+                .foregroundColor(textColor)
             
             Spacer()
             
             Text("\(Int(elo))")
                 .font(rank <= 3 ? .headline : .body)
                 .fontWeight(rank <= 3 ? .bold : .regular)
+                .foregroundColor(textColor)
                 .frame(width: 60, alignment: .trailing)
         }
         .padding(.horizontal)
@@ -357,7 +369,7 @@ struct ContentView: View {
             
             Text(title)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(secondaryTextColor)
                 .multilineTextAlignment(.center)
         }
         .padding(.vertical, 16)
@@ -365,7 +377,7 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, minHeight: isLarge ? 120 : 100)
         .background(cardBgColor)
         .cornerRadius(15)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 4, x: 0, y: 2)
     }
 
     private func directionalMissChart(missDirections: [String: Double]) -> some View {
@@ -408,14 +420,14 @@ struct ContentView: View {
         VStack {
             Text(direction)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.gray)
+                .foregroundColor(secondaryTextColor)
             
             Text(String(format: "%.0f%%", percentage * 100))
                 .font(.headline)
-                .foregroundColor(isHit ? primaryColor : .primary)
+                .foregroundColor(isHit ? primaryColor : textColor)
                 .frame(width: 60, height: 60)
                 .background(
-                    isHit ? primaryColor.opacity(0.3) : secondaryColor
+                    isHit ? primaryColor.opacity(colorScheme == .dark ? 0.4 : 0.3) : secondaryColor
                 )
                 .cornerRadius(isHit ? 30 : 10)
                 .overlay(
@@ -663,6 +675,7 @@ struct LeaderboardEntry {
 
 struct FooterView: View {
     @Binding var selectedTab: String
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack {
@@ -672,7 +685,7 @@ struct FooterView: View {
                     Image(systemName: "house.fill")
                     Text("Home").font(.caption)
                 }
-                .foregroundColor(selectedTab == "home" ? .blue : .primary)
+                .foregroundColor(selectedTab == "home" ? .blue : (colorScheme == .dark ? .white : .primary))
             }
             Spacer()
 
@@ -693,7 +706,7 @@ struct FooterView: View {
                     Image(systemName: "figure.golf")
                     Text("Practice").font(.caption)
                 }
-                .foregroundColor(selectedTab == "practice" ? .blue : .primary)
+                .foregroundColor(selectedTab == "practice" ? .blue : (colorScheme == .dark ? .white : .primary))
             }
             Spacer()
 
@@ -702,12 +715,12 @@ struct FooterView: View {
                     Image(systemName: "person.fill")
                     Text("Account").font(.caption)
                 }
-                .foregroundColor(selectedTab == "account" ? .blue : .primary)
+                .foregroundColor(selectedTab == "account" ? .blue : (colorScheme == .dark ? .white : .primary))
             }
             Spacer()
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(colorScheme == .dark ? Color(red: 0.15, green: 0.15, blue: 0.17) : Color(.systemGray6))
     }
 }
 

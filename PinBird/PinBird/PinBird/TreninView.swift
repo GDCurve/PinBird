@@ -17,11 +17,17 @@ struct GameWeakness {
     let drills: [PracticeDrill]
 }
 
-struct PracticeDrill {
+struct PracticeDrill: Identifiable, Equatable {
+    let id = UUID()
     let title: String
     let description: String
     let difficulty: Int
     let estimatedTime: Int
+    
+
+    static func == (lhs: PracticeDrill, rhs: PracticeDrill) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
 struct TreninView: View {
@@ -102,10 +108,9 @@ struct TreninView: View {
             }
             .padding(.bottom, 16)
         }
-        .sheet(isPresented: $showDrillDetail) {
-            if let drill = selectedDrill {
-                drillDetailView(drill: drill)
-            }
+        .sheet(item: $selectedDrill) { drill in
+ 
+            drillDetailView(drill: drill)
         }
         .onAppear {
             fetchUserStats()
@@ -147,11 +152,10 @@ struct TreninView: View {
                     .foregroundColor(.white.opacity(0.8))
                 
                 VStack(spacing: 8) {
-                    ForEach(weakness.drills.indices, id: \.self) { index in
-                        let drill = weakness.drills[index]
+                    ForEach(weakness.drills) { drill in
                         Button {
+    
                             selectedDrill = drill
-                            showDrillDetail = true
                         } label: {
                             HStack {
                                 Text(drill.title)
@@ -329,8 +333,6 @@ struct TreninView: View {
                 .frame(width: 60)
                 .padding(.top, 4)
             }
-            
-            
         }
         .frame(height: 220)
         .padding(.vertical, 10)
@@ -367,19 +369,16 @@ struct TreninView: View {
             }
             
             ZStack(alignment: .leading) {
-
                 Rectangle()
                     .frame(width: 200, height: 40)
                     .foregroundColor(Color.gray.opacity(0.2))
                     .cornerRadius(10)
                 
-
                 Rectangle()
                     .frame(width: 200 * leftValue, height: 40)
                     .foregroundColor(.red)
                     .cornerRadius(10, corners: [.topLeft, .bottomLeft])
                 
-
                 HStack {
                     Spacer().frame(width: 200 * leftValue)
                     Rectangle()
@@ -387,7 +386,6 @@ struct TreninView: View {
                         .foregroundColor(.green)
                 }
                 
-
                 HStack {
                     Spacer().frame(width: 200 * (leftValue + centerValue))
                     Rectangle()
@@ -396,7 +394,6 @@ struct TreninView: View {
                         .cornerRadius(10, corners: [.topRight, .bottomRight])
                 }
                 
-
                 HStack {
                     Text(String(format: "%.0f%%", leftValue * 100))
                         .font(.caption2)
@@ -475,7 +472,7 @@ struct TreninView: View {
                 Spacer()
                 
                 Button {
-                    showDrillDetail = false
+                    selectedDrill = nil
                 } label: {
                     Text("Close")
                         .frame(maxWidth: .infinity)
@@ -487,6 +484,7 @@ struct TreninView: View {
                 }
             }
         }
+        .id(drill.id)
     }
     
     private func fetchUserStats() {
@@ -504,7 +502,6 @@ struct TreninView: View {
             
             if let document = document, document.exists {
                 let data = document.data() ?? [:]
-                
                 
                 for key in [
                     "averagePutts", "greensInRegulation", "fairwayHitPercentage",
@@ -741,7 +738,6 @@ struct TreninView: View {
                         ),
                         PracticeDrill(
                             title: "Skills Test",
-                            
                             description: "Conduct a comprehensive skills test: 10 drives for accuracy, 10 approach shots to targets, 10 chips to within 3 feet, and 10 putts from 6 feet. Record your score out of 40 and track improvement over time.",
                             difficulty: 3,
                             estimatedTime: 40
